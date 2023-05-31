@@ -1,0 +1,35 @@
+/* Register.css */
+.register-form {
+  margin: 0 auto;
+  max-width: 300px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.register-form input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.register-form button {
+  width: 100%;
+  padding: 10px;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.register-form button:hover {
+  background-color: #218838;
+}
+
+.register-form .login-link {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  color: #333;
+}

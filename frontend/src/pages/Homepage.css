@@ -1,0 +1,10 @@
+.registerButton {
+    background-color: #42b983;
+    padding: 10px 20px;
+    margin-right: 10px;
+  }
+  
+  .loginButton {
+    background-color: #337ab7;
+    padding: 10px 20px;
+  }

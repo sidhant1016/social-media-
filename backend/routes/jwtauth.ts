@@ -1,77 +1,85 @@
 import bcrypt from "bcrypt"
-import express, { Router } from "express"
+import express, { Router,Request,Response } from "express"
 import pool from "../database"
-import jwtGenerator from "../util/jwtGenerator";
+import jwtgenerator from "../util/jwtgenrator"
+import autherization from "../middleware/autherization"
 import validInfo from "../middleware/validInfo"
-import authorize from "../middleware/authorization"
+
+
 const router = express.Router();
 router.use(express.json());
 
-router.post("/register", validInfo, async (req, res) => {
-    const { email, name, password } = req.body;
-  
-    try {
-      const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
-        email
-      ]);
-  
-      if (user.rows.length > 0) {
-        return res.status(401).json("User already exist!");
-      }
-  
-      const salt = await bcrypt.genSalt(10);
-      const bcryptPassword = await bcrypt.hash(password, salt);
-  
-      let newUser = await pool.query(
-        "INSERT INTO users (user_name, user_email, user_password) VALUES ($1, $2, $3) RETURNING *",
-        [name, email, bcryptPassword]
-      );
-  
-      const jwtToken = jwtGenerator(newUser.rows[0].user_id);
-  
-      return res.json({ jwtToken });
-    } catch (err:any) {
-      console.error(err.message);
-      res.status(500).send("Server error");
-    }
-  });
-  
-  router.post("/login", validInfo, async (req, res) => {
-    const { email, password } = req.body;
-  
-    try {
-      const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
-        email
-      ]);
-  
-      if (user.rows.length === 0) {
-        return res.status(401).json("Invalid Credential");
-      }
-  
-      const validPassword = await bcrypt.compare(
-        password,
-        user.rows[0].user_password
-      );
-  
-      if (!validPassword) {
-        return res.status(401).json("Invalid Credential");
-      }
-      const jwtToken = jwtGenerator(user.rows[0].user_id);
-      return res.json({ jwtToken });
-    } catch (err:any) {
-      console.error(err.message);
-      res.status(500).send("Server error");
-    }
-  });
-  
-  router.post("/verify", authorize, (req, res) => {
-    try {
-      res.json(true);
-    } catch (err:any) {
-      console.error(err.message);
-      res.status(500).send("Server error");
-    }
-  });
+// register 
+router.post("/register",validInfo, async (req: Request, res: Response) => {
+  try {
+    const { name, email, password } = req.body;
 
-  export default router
-  
+    // Check if email already exists (if so, throw error)
+    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
+      email
+    ]);
+
+    if (user.rows.length > 0) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
+    // User does not exist, proceed with registration
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Store the user details in the database
+    const newUser = await pool.query(
+      "INSERT INTO users (user_name, user_email, user_password) VALUES ($1, $2, $3) RETURNING *",
+      [name, email, hashedPassword]
+    );
+
+    // Generate JWT 
+    const token = jwtgenerator(newUser.rows[0].user_id);
+    res.json({ name, token });
+
+  } catch (error:any) {
+    console.error(error.message);
+    res.status(500).send("Server error");
+  }
+});
+// Login route
+router.post("/login", validInfo,async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check if user exists
+    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [email]);
+
+    if (user.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Compare passwords
+    const passwordMatch = await bcrypt.compare(password, user.rows[0].user_password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+     // provide token
+
+     const token = jwtgenerator(user.rows[0].user_id);
+     const name = user.rows[0].user_name;
+     res.json({ name, token});
+  } catch (err:any) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+router.post("/verified", autherization, (req, res) => {
+  try {
+      res.json(true);
+
+  } catch (err) {
+      res.status(500).send('Server Error');     
+  }
+});
+
+export default router;
+

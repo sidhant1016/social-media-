@@ -1,6 +1,6 @@
 import { NextFunction,Request,Response } from "express";
 
-export default function (req: Request, res: Response, next: NextFunction) {
+export default function (req:Request, res:Response, next:NextFunction) {
     const { email, name, password } = req.body;
 
     function validEmail(userEmail:any) {
